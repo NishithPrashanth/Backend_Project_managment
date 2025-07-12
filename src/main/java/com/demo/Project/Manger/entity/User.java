@@ -33,6 +33,11 @@ public class User {
     @OneToMany(mappedBy = "assignedTo", cascade = CascadeType.ALL, orphanRemoval = true)
     
     private List<Task> assignedTasks;
+    
+    
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TeamMember> teamMemberships;
+
 
     // Getters and Setters
 

@@ -3,13 +3,14 @@ package com.demo.Project.Manger.controller;
 import com.demo.Project.Manger.dto.ProjectDTO;
 import com.demo.Project.Manger.dto.ProjectDetailDTO;
 import com.demo.Project.Manger.entity.Project;
+import com.demo.Project.Manger.entity.TeamMember;
 import com.demo.Project.Manger.entity.User;
 import com.demo.Project.Manger.enums.Role;
 import com.demo.Project.Manger.repository.ProjectRepository;
 import com.demo.Project.Manger.repository.TeamMemberRepository;
 import com.demo.Project.Manger.repository.UserRepository;
 import com.demo.Project.Manger.service.EmailService;
-
+import com.demo.Project.Manger.service.ProjectService;
 import com.demo.Project.Manger.util.JwtUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,6 +21,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,6 +45,10 @@ public class ProjectController {
     
     @Autowired
     private TeamMemberRepository teamMemberRepository;
+    
+    
+    @Autowired
+    private ProjectService projectService;
 
     @Autowired
     private JwtUtil jwtService;
@@ -102,14 +109,7 @@ public class ProjectController {
 
         return ResponseEntity.ok(savedProject);
     }
-    /*Used by the admin
-    @GetMapping
-    public ResponseEntity<List<Project>> getAllProjects() {
-        System.out.println("📤 [GET] /api/projects - Fetching all projects");
-        List<Project> projects = projectRepository.findAll();
-        return ResponseEntity.ok(projects);
-    }
-    */
+  
     @GetMapping
     public ResponseEntity<List<ProjectDTO>> getAllProjects() {
         List<Project> projects = projectRepository.findAll();
@@ -121,26 +121,7 @@ public class ProjectController {
         return ResponseEntity.ok(dtoList);
     }
 
-    /* used by the project manager
-    @GetMapping("/my-projects")
-    public ResponseEntity<List<Project>> getProjectsForLoggedInUser(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).build(); // Unauthorized
-        }
-
-        String token = authHeader.substring(7); // Remove "Bearer "
-        String email = jwtService.extractUsername(token);
-        User user = userRepository.findByEmail(email);
-
-        if (user == null) {
-            return ResponseEntity.status(404).build(); // User not found
-        }
-
-        List<Project> myProjects = projectRepository.findByManager(user);
-        return ResponseEntity.ok(myProjects);
-    }
-    */
+    
     
     
     @GetMapping("/my-projects")
@@ -196,4 +177,26 @@ public class ProjectController {
 
         return ResponseEntity.ok(dto);
     }
+    
+ 
+    @GetMapping("/assigned-projects")
+    public ResponseEntity<List<ProjectDTO>> getProjectsForTeamMember(Authentication authentication) {
+       
+    	User user = userRepository.findByEmail(authentication.getName());
+    	if (user == null) {
+    	    throw new UsernameNotFoundException("User not found");
+    	}
+
+     
+        List<TeamMember> memberships = teamMemberRepository.findByUser(user);
+
+        // 3. Convert each Project entity to a ProjectDTO to avoid circular nesting
+        List<ProjectDTO> projectDTOs = memberships.stream()
+            .map(tm -> new ProjectDTO(tm.getProject()))
+            .toList();
+
+        // 4. Return the list of safe, flat DTOs
+        return ResponseEntity.ok(projectDTOs);
+    }
+
 }

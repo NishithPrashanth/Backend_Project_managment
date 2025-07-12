@@ -12,6 +12,7 @@ public class TaskDTO {
     private String status;
     private LocalDate dueDate;
     private String assignee;
+    private boolean completed; 
 
     // ✅ Static mapper from Entity to DTO
     public static TaskDTO fromEntity(Task task) {
@@ -22,10 +23,19 @@ public class TaskDTO {
         dto.setStatus(task.getStatus());
         dto.setDueDate(task.getDueDate());
         dto.setAssignee(task.getAssignedTo().getName());
+        dto.setCompleted(task.isCompleted()); 
         return dto;
     }
 
-    // ✅ Getters and Setters
+    public boolean isCompleted() {
+		return completed;
+	}
+
+	public void setCompleted(boolean completed) {
+		this.completed = completed;
+	}
+
+	// ✅ Getters and Setters
     public Long getId() {
         return id;
     }

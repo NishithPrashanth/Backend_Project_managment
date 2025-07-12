@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.demo.Project.Manger.dto.TaskDTO;
 import com.demo.Project.Manger.dto.TaskRequestDTO;
@@ -76,6 +77,55 @@ public class TaskController {
         List<TaskDTO> dtoList = tasks.stream().map(TaskDTO::fromEntity).toList();
         return ResponseEntity.ok(dtoList);
     }
+    
+    @GetMapping("/projects/{projectId}/my-tasks")
+    public ResponseEntity<List<TaskDTO>> getMyTasksInProject(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User user = userRepository.findByEmail(userDetails.getUsername());
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<Task> tasks = taskRepository.findByProjectIdAndAssignedTo(projectId, user);
+        List<TaskDTO> dtoList = tasks.stream().map(TaskDTO::fromEntity).toList();
+        return ResponseEntity.ok(dtoList);
+    }
+    
+ // PUT  /api/tasks/{id}/completed   – body: { "completed": true | false }
+    @PutMapping("/tasks/{id}/completed")
+    public ResponseEntity<TaskDTO> setCompletedFlag(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> payload,
+            @AuthenticationPrincipal UserDetails me) {
+
+        System.out.println("🔧 Received request to update task ID: " + id);
+        boolean completedFlag = payload.getOrDefault("completed", true);
+        System.out.println("👉 Completed flag from request: " + completedFlag);
+        System.out.println("👤 Authenticated user: " + me.getUsername());
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> {
+                    System.out.println("❌ Task not found with ID: " + id);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Task not found");
+                });
+
+        if (!task.getAssignedTo().getEmail().equals(me.getUsername())) {
+            System.out.println("⛔ Forbidden: Task not assigned to this user");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+
+        task.setCompleted(completedFlag);
+        task.setStatus(completedFlag ? "Done" : "To Do");
+        taskRepository.save(task);
+
+        System.out.println("✅ Task updated successfully. New status: " + task.getStatus());
+        return ResponseEntity.ok(TaskDTO.fromEntity(task));
+    }
+
+
     
     @PostMapping("/tasks")
     public ResponseEntity<?> createTask(@RequestBody TaskRequestDTO dto) {

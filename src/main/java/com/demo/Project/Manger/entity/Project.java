@@ -33,6 +33,11 @@ public class Project {
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
   
     private List<Task> tasks;
+    
+    
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TeamMember> teamMembers;
+
 
     // Getters and Setters
 

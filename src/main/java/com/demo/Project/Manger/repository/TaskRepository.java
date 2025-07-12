@@ -15,5 +15,7 @@ public interface TaskRepository extends JpaRepository<Task, Long>{
 	    // OR (if you only have the projectId and don't want to fetch the full Project object)
 	    List<Task> findByProjectId(Long projectId);
 	    List<Task> findByAssignedTo(User user);
+	    List<Task> findByProjectIdAndAssignedTo(Long projectId, User user);
+
 
 }
