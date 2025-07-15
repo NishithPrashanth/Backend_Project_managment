@@ -32,6 +32,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/register", "/api/login").permitAll()
+                .requestMatchers("/api/projects/my-projects/**").hasRole("PROJECT_MANAGER")
+                .requestMatchers("/api/my-tasks").hasRole("PROJECT_MANAGER")
+                .requestMatchers("/api/projects").hasRole("ADMIN")
+               
                 .anyRequest().authenticated()
             )
             .httpBasic(); // or formLogin() if needed

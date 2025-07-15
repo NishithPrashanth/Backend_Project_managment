@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: pmflow-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: project_manager
+      MYSQL_ROOT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD} # ✅ only this is needed
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306" # avoid host conflict
+
+  backend:
+    build: . # auto‑builds with the Dockerfile above
+    container_name: pmflow-backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    env_file:
+      - prod.env # pulls real creds
+
+volumes:
+  db_data:
