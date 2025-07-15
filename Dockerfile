@@ -1,14 +1,19 @@
-# Step 1: Use a lightweight JDK base image
-FROM openjdk:17-jdk-alpine
-
-# Step 2: Set the working directory inside the container
+# ---------- 1️⃣  Build stage ----------
+FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Step 3: Copy the JAR file from the host machine into the container
-COPY target/Project-Manger-0.0.1-SNAPSHOT.jar app.jar
+# Copy pom.xml first for better layer caching
+COPY pom.xml .
+RUN mvn -B dependency:go-offline
 
-# Step 4: Expose port 8080 (the default Spring Boot port)
+# Copy the rest of the source and build
+COPY src ./src
+RUN mvn -B clean package -DskipTests        # produces /app/target/*.jar
+
+# ---------- 2️⃣  Runtime stage ----------
+FROM eclipse-temurin:17-jre                 # slim JRE‑only image
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+
 EXPOSE 8080
-
-# Step 5: Define the command to run the app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java","-jar","app.jar"]
